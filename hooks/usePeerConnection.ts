@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Peer from 'simple-peer';
-import type PartySocket from 'partysocket';
+import type { SocketLike } from '@/hooks/useRoomConnection';
 
 export function usePeerConnection(
-  socket: PartySocket | null,
+  socket: SocketLike | null,
   localStream: MediaStream | null,
   shouldInitiate: boolean | null
 ) {

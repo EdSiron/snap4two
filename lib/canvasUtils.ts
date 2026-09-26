@@ -67,3 +67,36 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.src = src;
   });
 }
+
+export async function buildDuoStrip(
+  myPhotos: string[],
+  partnerPhotos: string[],
+  myPosition: 'left' | 'right'
+): Promise<string> {
+  const COL_W = 280, OUTER_PAD = 20, ROW_GAP = 20, ROW_H = 220, FOOTER_H = 100;
+  const canvas = document.createElement('canvas');
+  canvas.width = COL_W * 2 + OUTER_PAD * 2; // no gap between the two columns
+  canvas.height = OUTER_PAD * 2 + ROW_GAP * 3 + ROW_H * 4 + FOOTER_H;
+
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#fff8f3';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const leftPhotos = myPosition === 'left' ? myPhotos : partnerPhotos;
+  const rightPhotos = myPosition === 'left' ? partnerPhotos : myPhotos;
+
+  for (let i = 0; i < 4; i++) {
+    const y = OUTER_PAD + i * (ROW_H + ROW_GAP);
+    const leftImg = await loadImage(leftPhotos[i]);
+    const rightImg = await loadImage(rightPhotos[i]);
+    drawImageCover(ctx, leftImg, OUTER_PAD, y, COL_W, ROW_H);
+    drawImageCover(ctx, rightImg, OUTER_PAD + COL_W, y, COL_W, ROW_H); // starts exactly where left column ends
+  }
+
+  ctx.fillStyle = '#d88fa9';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('snap4two 🩷', canvas.width / 2, canvas.height - 35);
+
+  return canvas.toDataURL('image/png');
+}

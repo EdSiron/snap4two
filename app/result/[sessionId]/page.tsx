@@ -3,17 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/sessionStore";
-import { buildStrip } from "@/lib/canvasUtils";
+import { buildStrip, buildDuoStrip } from "@/lib/canvasUtils";
 
 export default function ResultPage() {
-  const { photos, videoBlob, reset } = useSessionStore();
+  const { photos, partnerPhotos, myPosition, videoBlob, reset } =
+    useSessionStore();
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     if (photos.length === 0) return;
-    buildStrip(photos).then(setStripUrl);
-  }, [photos]);
+
+    if (partnerPhotos.length >= 4 && myPosition) {
+      buildDuoStrip(photos, partnerPhotos, myPosition).then(setStripUrl);
+    } else {
+      buildStrip(photos).then(setStripUrl);
+    }
+  }, [photos, partnerPhotos, myPosition]);
 
   // warn before leaving without downloading
   useEffect(() => {
