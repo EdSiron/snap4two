@@ -25,7 +25,7 @@ export async function buildStrip(photos: string[]): Promise<string> {
   for (let i = 0; i < photos.length; i++) {
     const img = await loadImage(photos[i]);
     const y = PAD + i * (PHOTO_H + PAD);
-    ctx.drawImage(img, PAD, y, W - PAD * 2, PHOTO_H);
+    drawImageCover(ctx, img, PAD, y, W - PAD * 2, PHOTO_H);
   }
 
   ctx.fillStyle = '#d88fa9';
@@ -34,6 +34,30 @@ export async function buildStrip(photos: string[]): Promise<string> {
   ctx.fillText('snap4two 🩷', canvas.width / 2, canvas.height - 35);
 
   return canvas.toDataURL('image/png');
+}
+
+// draws img into the destination box like CSS object-fit: cover (crop, no stretch)
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number, dy: number, dw: number, dh: number
+) {
+  const imgRatio = img.width / img.height;
+  const boxRatio = dw / dh;
+
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+  if (imgRatio > boxRatio) {
+    // image is wider than the box — crop left/right
+    sw = img.height * boxRatio;
+    sx = (img.width - sw) / 2;
+  } else {
+    // image is taller than the box — crop top/bottom
+    sh = img.width / boxRatio;
+    sy = (img.height - sh) / 2;
+  }
+
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

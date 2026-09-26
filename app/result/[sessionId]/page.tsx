@@ -51,7 +51,7 @@ export default function ResultPage() {
         <img
           src={stripUrl}
           alt="Photo strip"
-          className="rounded-2xl shadow-lg w-[300px]"
+          className="rounded-2xl shadow-lg w-full max-w-[300px]"
         />
       )}
 
@@ -59,16 +59,16 @@ export default function ResultPage() {
         <video
           controls
           src={URL.createObjectURL(videoBlob)}
-          className="rounded-2xl shadow-lg w-[300px]"
+          className="rounded-2xl shadow-lg w-full max-w-[300px]"
         />
       )}
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none px-4">
         {stripUrl && (
           <a
             href={stripUrl}
             download="snap4two-strip.png"
-            className="px-6 py-3 rounded-full bg-[#d88fa9] text-white font-semibold shadow-md"
+            className="w-full sm:w-auto text-center px-6 py-3 rounded-full bg-[#d88fa9] text-white font-semibold shadow-md"
           >
             Download Strip
           </a>
@@ -77,7 +77,7 @@ export default function ResultPage() {
           <a
             href={URL.createObjectURL(videoBlob)}
             download="snap4two-session.webm"
-            className="px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold shadow-md"
+            className="w-full sm:w-auto text-center px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold shadow-md"
           >
             Download Video
           </a>
@@ -87,7 +87,7 @@ export default function ResultPage() {
             reset();
             router.push("/capture");
           }}
-          className="px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold"
+          className="w-full sm:w-auto px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold"
         >
           Retake
         </button>
