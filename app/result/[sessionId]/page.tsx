@@ -63,7 +63,7 @@ export default function ResultPage() {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none px-4">
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:w-auto sm:max-w-none px-4 justify-center">
         {stripUrl && (
           <a
             href={stripUrl}
