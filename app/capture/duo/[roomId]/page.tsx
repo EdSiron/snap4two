@@ -10,6 +10,7 @@ import { CountdownOverlay } from "@/components/capture/CountdownOverlay";
 import { captureFrame } from "@/lib/canvasUtils";
 import { useSessionStore } from "@/store/sessionStore";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { v4 as uuid } from "uuid";
 
 export default function DuoCapturePage() {
@@ -20,6 +21,8 @@ export default function DuoCapturePage() {
   const { videoRef, stream } = useCamera();
   const { start: startRecording, stop: stopRecording } = useDuoRecorder();
   const { peerJoined, shouldInitiate, socket } = useRoomConnection(roomId);
+
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
   const handlePeerData = useCallback((raw: string) => {
@@ -199,15 +202,24 @@ export default function DuoCapturePage() {
     </div>
   );
 
+  const handleBack = () => {
+    if (peerConnected || running) {
+      setShowLeaveConfirm(true);
+      return;
+    }
+    router.push("/");
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f4ede7] px-3 py-6 sm:px-6">
       <div className="flex w-full max-w-2xl items-center justify-between">
         <button
-          onClick={() => router.push("/")}
-          className="text-lg font-bold text-[#d88fa9]"
+          onClick={handleBack}
+          className="flex items-center gap-1.5 text-sm font-medium text-[#a86b80] transition hover:text-[#d88fa9]"
         >
-          snap4two 🩷
+          <span className="text-lg">←</span> Back
         </button>
+        <span className="text-lg font-bold text-[#d88fa9]">snap4two 🩷</span>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#a86b80] shadow-sm">
           {myCaptureDone
             ? "Session complete 🩷"
@@ -303,6 +315,17 @@ export default function DuoCapturePage() {
 
         <div className="w-11 sm:w-24" />
       </div>
+      <ConfirmModal
+        open={showLeaveConfirm}
+        title="Leave this session?"
+        message={
+          peerConnected
+            ? "Your partner is connected — leaving now will disconnect them and end the session for both of you."
+            : "You're in the middle of a capture — going back now will discard your progress."
+        }
+        onCancel={() => setShowLeaveConfirm(false)}
+        onConfirm={() => router.push("/")}
+      />
     </main>
   );
 }
