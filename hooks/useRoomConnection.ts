@@ -1,18 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { getPusherClient } from '@/lib/pusherClient';
-import type { Channel } from 'pusher-js';
+import { useEffect, useState } from "react";
+import { getPusherClient } from "@/lib/pusherClient";
+import type { Channel } from "pusher-js";
 
 // A minimal socket-like wrapper so usePeerConnection/useSyncedCapture
 // don't need to change how they send/receive messages.
 export interface SocketLike {
   send: (data: string) => void;
-  addEventListener: (type: 'message', cb: (evt: MessageEvent) => void) => void;
-  removeEventListener: (type: 'message', cb: (evt: MessageEvent) => void) => void;
+  addEventListener: (type: "message", cb: (evt: MessageEvent) => void) => void;
+  removeEventListener: (
+    type: "message",
+    cb: (evt: MessageEvent) => void,
+  ) => void;
 }
 
-const CLIENT_EVENTS = ['client-webrtc-signal', 'client-start-sequence', 'client-photo'];
+const CLIENT_EVENTS = ["client-webrtc-signal", "client-start-sequence"];
 
 class ChannelSocket implements SocketLike {
   private emitter = new EventTarget();
@@ -21,7 +24,7 @@ class ChannelSocket implements SocketLike {
     CLIENT_EVENTS.forEach((eventName) => {
       channel.bind(eventName, (data: unknown) => {
         this.emitter.dispatchEvent(
-          new MessageEvent('message', { data: JSON.stringify(data) })
+          new MessageEvent("message", { data: JSON.stringify(data) }),
         );
       });
     });
@@ -32,11 +35,11 @@ class ChannelSocket implements SocketLike {
     this.channel.trigger(`client-${parsed.type}`, parsed);
   }
 
-  addEventListener(type: 'message', cb: (evt: MessageEvent) => void) {
+  addEventListener(type: "message", cb: (evt: MessageEvent) => void) {
     this.emitter.addEventListener(type, cb as EventListener);
   }
 
-  removeEventListener(type: 'message', cb: (evt: MessageEvent) => void) {
+  removeEventListener(type: "message", cb: (evt: MessageEvent) => void) {
     this.emitter.removeEventListener(type, cb as EventListener);
   }
 }
@@ -54,7 +57,7 @@ export function useRoomConnection(roomId: string) {
     const wrapped = new ChannelSocket(channel);
     setSocket(wrapped);
 
-    channel.bind('pusher:subscription_succeeded', (members: any) => {
+    channel.bind("pusher:subscription_succeeded", (members: any) => {
       setConnected(true);
       if (members.count > 1) {
         setPeerJoined(true);
@@ -62,12 +65,12 @@ export function useRoomConnection(roomId: string) {
       }
     });
 
-    channel.bind('pusher:member_added', () => {
+    channel.bind("pusher:member_added", () => {
       setPeerJoined(true);
       setShouldInitiate(true);
     });
 
-    channel.bind('pusher:member_removed', () => {
+    channel.bind("pusher:member_removed", () => {
       setPeerJoined(false);
       setShouldInitiate(null);
     });

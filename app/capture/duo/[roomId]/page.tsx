@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCamera } from "@/hooks/useCamera";
-// remove: import { useRecorder } from '@/hooks/useRecorder';
 import { useDuoRecorder } from "@/hooks/useDuoRecorder";
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { usePeerConnection } from "@/hooks/usePeerConnection";
@@ -10,7 +9,7 @@ import { useSyncedCapture } from "@/hooks/useSyncedCapture";
 import { CountdownOverlay } from "@/components/capture/CountdownOverlay";
 import { captureFrame } from "@/lib/canvasUtils";
 import { useSessionStore } from "@/store/sessionStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { v4 as uuid } from "uuid";
 
 export default function DuoCapturePage() {
@@ -21,35 +20,70 @@ export default function DuoCapturePage() {
   const { videoRef, stream } = useCamera();
   const { start: startRecording, stop: stopRecording } = useDuoRecorder();
   const { peerJoined, shouldInitiate, socket } = useRoomConnection(roomId);
-  const { remoteStream, peerConnected } = usePeerConnection(
+
+  const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
+  const handlePeerData = useCallback((raw: string) => {
+  try {
+    const data = JSON.parse(raw);
+    if (data.type === "photo") {
+      setPartnerPhotos((prev) => [...prev, data.photo]);
+    }
+    if (data.type === "photo-update") {
+      setPartnerPhotos((prev) => {
+        const next = [...prev];
+        next[data.index] = data.photo;
+        return next;
+      });
+    }
+  } catch {
+    // ignore malformed data messages
+  }
+}, []);
+
+  const { remoteStream, peerConnected, sendData } = usePeerConnection(
     socket,
     stream,
     shouldInitiate,
+    handlePeerData,
   );
-  const {
-    count,
-    shotIndex,
-    running,
-    captureSignal,
-    partnerPhotos,
-    start,
-    sendPhoto,
-  } = useSyncedCapture(socket);
 
-  const { addPhoto, reset, setPartnerPhotos, setMyPosition, setVideoBlob } =
-    useSessionStore();
+  const { count, shotIndex, running, captureSignal, start } =
+    useSyncedCapture(socket);
+
+  const {
+    addPhoto,
+    reset,
+    setPartnerPhotos: saveStorePartnerPhotos,
+    setMyPosition,
+    setVideoBlob,
+    setRoomId,
+  } = useSessionStore();
+
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const lastCaptureSignal = useRef(0);
   const partnerPhotosRef = useRef<string[]>([]);
   const navigatedRef = useRef(false);
+  const wasRunningRef = useRef(false);
   const [myCaptureDone, setMyCaptureDone] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   const myPosition: "left" | "right" | null =
     shouldInitiate === null ? null : shouldInitiate ? "left" : "right";
+  
+  const [reviewing, setReviewing] = useState(false);
+const [retakeIndex, setRetakeIndex] = useState<number | null>(null);
 
-  const wasRunningRef = useRef(false);
+useEffect(() => {
+  if (!myCaptureDone || reviewing) return;
 
-  const [shareUrl, setShareUrl] = useState("");
+  if (partnerPhotos.length >= 4) {
+    setReviewing(true);
+    return;
+  }
+
+  const timeoutId = setTimeout(() => setReviewing(true), 3000);
+  return () => clearTimeout(timeoutId);
+}, [myCaptureDone, partnerPhotos, reviewing]);
 
   useEffect(() => {
     setShareUrl(window.location.href);
@@ -64,6 +98,7 @@ export default function DuoCapturePage() {
       myPosition
     ) {
       reset();
+      setPartnerPhotos([]); // clear any stale partner frames from a previous run
       startRecording(stream, remoteStream, myPosition);
     }
     wasRunningRef.current = running;
@@ -87,21 +122,14 @@ export default function DuoCapturePage() {
     if (videoRef.current) {
       const frame = captureFrame(videoRef.current);
       addPhoto(frame);
-      sendPhoto(frame);
+      sendData(JSON.stringify({ type: "photo", photo: frame }));
     }
 
     if (captureSignal === 4) {
       stopRecording().then(setVideoBlob);
       setMyCaptureDone(true);
     }
-  }, [
-    captureSignal,
-    videoRef,
-    addPhoto,
-    sendPhoto,
-    stopRecording,
-    setVideoBlob,
-  ]);
+  }, [captureSignal, videoRef, addPhoto, sendData, stopRecording, setVideoBlob]);
 
   useEffect(() => {
     if (!myCaptureDone || navigatedRef.current) return;
@@ -109,8 +137,9 @@ export default function DuoCapturePage() {
     const finish = () => {
       if (navigatedRef.current) return;
       navigatedRef.current = true;
-      setPartnerPhotos(partnerPhotosRef.current);
+      saveStorePartnerPhotos(partnerPhotosRef.current);
       setMyPosition(myPosition);
+      setRoomId(roomId); // NEW
       const sessionId = uuid();
       router.push(`/result/${sessionId}`);
     };
@@ -127,7 +156,7 @@ export default function DuoCapturePage() {
     partnerPhotos,
     myPosition,
     router,
-    setPartnerPhotos,
+    saveStorePartnerPhotos,
     setMyPosition,
   ]);
 
@@ -141,7 +170,7 @@ export default function DuoCapturePage() {
         className="w-full h-full object-cover scale-x-[-1]"
       />
       {running && <CountdownOverlay count={count} />}
-      <span className="absolute bottom-2 left-2 text-white text-xs bg-black/40 px-2 py-1 rounded-full">
+      <span className="absolute bottom-1 left-1 text-white text-[10px] sm:text-xs bg-black/40 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
         You
       </span>
     </div>
@@ -161,7 +190,7 @@ export default function DuoCapturePage() {
           waiting...
         </div>
       )}
-      <span className="absolute bottom-2 left-2 text-white text-xs bg-black/40 px-2 py-1 rounded-full">
+      <span className="absolute bottom-1 left-1 text-white text-[10px] sm:text-xs bg-black/40 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
         Partner
       </span>
     </div>
@@ -198,19 +227,12 @@ export default function DuoCapturePage() {
           </div>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl">
-        <div
-          className={
-            myPosition === "right" ? "order-2 flex-1" : "order-1 flex-1"
-          }
-        >
+
+      <div className="flex flex-row gap-2 sm:gap-3 w-full max-w-2xl px-2">
+        <div className={myPosition === "right" ? "order-2 flex-1 min-w-0" : "order-1 flex-1 min-w-0"}>
           {localBox}
         </div>
-        <div
-          className={
-            myPosition === "right" ? "order-1 flex-1" : "order-2 flex-1"
-          }
-        >
+        <div className={myPosition === "right" ? "order-1 flex-1 min-w-0" : "order-2 flex-1 min-w-0"}>
           {remoteBox}
         </div>
       </div>

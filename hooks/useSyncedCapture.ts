@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import type { SocketLike } from '@/hooks/useRoomConnection';
+import { useEffect, useState, useCallback } from "react";
+import type { SocketLike } from "@/hooks/useRoomConnection";
 
 const TOTAL_SHOTS = 4;
 
@@ -10,13 +10,11 @@ export function useSyncedCapture(socket: SocketLike | null) {
   const [shotIndex, setShotIndex] = useState(0);
   const [running, setRunning] = useState(false);
   const [captureSignal, setCaptureSignal] = useState(0);
-  const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   const runLocalSequence = useCallback(async () => {
     setRunning(true);
-    setPartnerPhotos([]);
     for (let shot = 0; shot < TOTAL_SHOTS; shot++) {
       setShotIndex(shot);
       for (let c = 3; c > 0; c--) {
@@ -34,28 +32,21 @@ export function useSyncedCapture(socket: SocketLike | null) {
 
   const start = () => {
     if (!socket) return;
-    socket.send(JSON.stringify({ type: 'start-sequence' }));
+    socket.send(JSON.stringify({ type: "start-sequence" }));
     runLocalSequence();
-  };
-
-  const sendPhoto = (photo: string) => {
-    socket?.send(JSON.stringify({ type: 'photo', photo }));
   };
 
   useEffect(() => {
     if (!socket) return;
     const handler = (evt: MessageEvent) => {
       const data = JSON.parse(evt.data);
-      if (data.type === 'start-sequence') {
+      if (data.type === "start-sequence") {
         runLocalSequence();
       }
-      if (data.type === 'photo') {
-        setPartnerPhotos((prev) => [...prev, data.photo]);
-      }
     };
-    socket.addEventListener('message', handler);
-    return () => socket.removeEventListener('message', handler);
+    socket.addEventListener("message", handler);
+    return () => socket.removeEventListener("message", handler);
   }, [socket, runLocalSequence]);
 
-  return { count, shotIndex, running, captureSignal, partnerPhotos, start, sendPhoto };
+  return { count, shotIndex, running, captureSignal, start };
 }

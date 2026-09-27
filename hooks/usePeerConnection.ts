@@ -7,15 +7,19 @@ import type { SocketLike } from '@/hooks/useRoomConnection';
 export function usePeerConnection(
   socket: SocketLike | null,
   localStream: MediaStream | null,
-  shouldInitiate: boolean | null
+  shouldInitiate: boolean | null,
+  onData?: (data: string) => void
 ) {
   const peerRef = useRef<Peer.Instance | null>(null);
   const pendingSignalsRef = useRef<any[]>([]);
+  const onDataRef = useRef(onData);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [peerConnected, setPeerConnected] = useState(false);
 
-  // Listen for signaling messages as soon as the socket exists —
-  // don't wait for the peer object, or early messages get lost.
+  useEffect(() => {
+    onDataRef.current = onData;
+  }, [onData]);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -26,7 +30,6 @@ export function usePeerConnection(
       if (peerRef.current) {
         peerRef.current.signal(data.signal);
       } else {
-        // peer isn't created yet — hold onto it
         pendingSignalsRef.current.push(data.signal);
       }
     };
@@ -35,7 +38,6 @@ export function usePeerConnection(
     return () => socket.removeEventListener('message', handleMessage);
   }, [socket]);
 
-  // Create the actual Peer once we have everything we need
   useEffect(() => {
     if (!socket || !localStream || shouldInitiate === null) return;
 
@@ -57,9 +59,14 @@ export function usePeerConnection(
     });
     peer.on('error', (err) => console.warn('[peer] error:', err.message));
 
+    // photos now travel over the peer connection's own data channel,
+    // completely bypassing Pusher's 10KB event size limit
+    peer.on('data', (data) => {
+      onDataRef.current?.(data.toString());
+    });
+
     peerRef.current = peer;
 
-    // flush any signals that arrived before this peer existed
     pendingSignalsRef.current.forEach((sig) => peer.signal(sig));
     pendingSignalsRef.current = [];
 
@@ -69,5 +76,13 @@ export function usePeerConnection(
     };
   }, [socket, localStream, shouldInitiate]);
 
-  return { remoteStream, peerConnected };
+  const sendData = (data: string) => {
+    try {
+      peerRef.current?.send(data);
+    } catch (err) {
+      console.warn('[peer] send failed:', err);
+    }
+  };
+
+  return { remoteStream, peerConnected, sendData };
 }
