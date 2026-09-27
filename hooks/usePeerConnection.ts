@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import Peer from 'simple-peer';
-import type { SocketLike } from '@/hooks/useRoomConnection';
+import { useEffect, useRef, useState } from "react";
+import Peer from "simple-peer";
+import type { SocketLike } from "@/hooks/useRoomConnection";
 
 export function usePeerConnection(
   socket: SocketLike | null,
   localStream: MediaStream | null,
   shouldInitiate: boolean | null,
-  onData?: (data: string) => void
+  onData?: (data: string) => void,
 ) {
   const peerRef = useRef<Peer.Instance | null>(null);
   const pendingSignalsRef = useRef<any[]>([]);
@@ -25,7 +25,7 @@ export function usePeerConnection(
 
     const handleMessage = (evt: MessageEvent) => {
       const data = JSON.parse(evt.data);
-      if (data.type !== 'webrtc-signal') return;
+      if (data.type !== "webrtc-signal") return;
 
       if (peerRef.current) {
         peerRef.current.signal(data.signal);
@@ -34,8 +34,8 @@ export function usePeerConnection(
       }
     };
 
-    socket.addEventListener('message', handleMessage);
-    return () => socket.removeEventListener('message', handleMessage);
+    socket.addEventListener("message", handleMessage);
+    return () => socket.removeEventListener("message", handleMessage);
   }, [socket]);
 
   useEffect(() => {
@@ -47,21 +47,21 @@ export function usePeerConnection(
       stream: localStream,
     });
 
-    peer.on('signal', (data) => {
-      socket.send(JSON.stringify({ type: 'webrtc-signal', signal: data }));
+    peer.on("signal", (data) => {
+      socket.send(JSON.stringify({ type: "webrtc-signal", signal: data }));
     });
 
-    peer.on('stream', (stream) => setRemoteStream(stream));
-    peer.on('connect', () => setPeerConnected(true));
-    peer.on('close', () => {
+    peer.on("stream", (stream) => setRemoteStream(stream));
+    peer.on("connect", () => setPeerConnected(true));
+    peer.on("close", () => {
       setPeerConnected(false);
       setRemoteStream(null);
     });
-    peer.on('error', (err) => console.warn('[peer] error:', err.message));
+    peer.on("error", (err) => console.warn("[peer] error:", err.message));
 
     // photos now travel over the peer connection's own data channel,
     // completely bypassing Pusher's 10KB event size limit
-    peer.on('data', (data) => {
+    peer.on("data", (data) => {
       onDataRef.current?.(data.toString());
     });
 
@@ -80,7 +80,7 @@ export function usePeerConnection(
     try {
       peerRef.current?.send(data);
     } catch (err) {
-      console.warn('[peer] send failed:', err);
+      console.warn("[peer] send failed:", err);
     }
   };
 

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { getPusherClient } from '@/lib/pusherClient';
+import { useEffect, useState } from "react";
+import { getPusherClient } from "@/lib/pusherClient";
 
 export function useRetakeRequest(roomId: string | null) {
   const [incomingRequest, setIncomingRequest] = useState(false);
@@ -13,8 +13,8 @@ export function useRetakeRequest(roomId: string | null) {
     const channelName = `presence-room-${roomId}`;
     const channel = pusher.subscribe(channelName);
 
-    channel.bind('client-retake-request', () => setIncomingRequest(true));
-    channel.bind('client-retake-agreed', () => setPartnerAgreed(true));
+    channel.bind("client-retake-request", () => setIncomingRequest(true));
+    channel.bind("client-retake-agreed", () => setPartnerAgreed(true));
 
     return () => {
       pusher.unsubscribe(channelName);
@@ -24,15 +24,19 @@ export function useRetakeRequest(roomId: string | null) {
   const requestRetake = () => {
     if (!roomId) return;
     const pusher = getPusherClient();
-    const channel = pusher.channel(`presence-room-${roomId}`) || pusher.subscribe(`presence-room-${roomId}`);
-    channel.trigger('client-retake-request', {});
+    const channel =
+      pusher.channel(`presence-room-${roomId}`) ||
+      pusher.subscribe(`presence-room-${roomId}`);
+    channel.trigger("client-retake-request", {});
   };
 
   const agreeToRetake = () => {
     if (!roomId) return;
     const pusher = getPusherClient();
-    const channel = pusher.channel(`presence-room-${roomId}`) || pusher.subscribe(`presence-room-${roomId}`);
-    channel.trigger('client-retake-agreed', {});
+    const channel =
+      pusher.channel(`presence-room-${roomId}`) ||
+      pusher.subscribe(`presence-room-${roomId}`);
+    channel.trigger("client-retake-agreed", {});
   };
 
   return { incomingRequest, partnerAgreed, requestRetake, agreeToRetake };

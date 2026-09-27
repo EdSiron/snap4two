@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
+import { useRef, useState } from "react";
 
 export function useRecorder(stream: MediaStream | null) {
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -11,9 +11,9 @@ export function useRecorder(stream: MediaStream | null) {
     if (!stream) return;
     chunksRef.current = [];
 
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9'
-      : 'video/webm';
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : "video/webm";
 
     const recorder = new MediaRecorder(stream, { mimeType });
     recorder.ondataavailable = (e) => {
@@ -30,7 +30,7 @@ export function useRecorder(stream: MediaStream | null) {
       if (!recorder) return resolve(new Blob());
       recorder.onstop = () => {
         setRecording(false);
-        resolve(new Blob(chunksRef.current, { type: 'video/webm' }));
+        resolve(new Blob(chunksRef.current, { type: "video/webm" }));
       };
       recorder.stop();
     });

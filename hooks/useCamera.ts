@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -12,14 +12,14 @@ export function useCamera() {
     let mounted = true;
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'user' }, audio: true })
+      .getUserMedia({ video: { facingMode: "user" }, audio: true })
       .then((stream) => {
         if (!mounted) return;
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
         setReady(true);
       })
-      .catch(() => setError('camera-denied'));
+      .catch(() => setError("camera-denied"));
 
     return () => {
       mounted = false;

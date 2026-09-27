@@ -62,11 +62,13 @@ export default function ResultPage() {
 
   if (photos.length === 0) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-[#fff8f3] gap-4">
-        <p className="text-[#d88fa9] text-xl">No photos yet — go take some first! 🎀</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#fff8f3]">
+        <p className="text-xl text-[#d88fa9]">
+          No photos yet — go take some first! 🎀
+        </p>
         <button
           onClick={() => router.push("/capture")}
-          className="px-6 py-2 rounded-full bg-[#d88fa9] text-white font-semibold"
+          className="rounded-full bg-[#d88fa9] px-6 py-2 font-semibold text-white"
         >
           Go to Capture
         </button>
@@ -75,23 +77,35 @@ export default function ResultPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[#fff8f3] gap-6 py-10 px-4">
-      <h1 className="text-2xl font-bold text-[#d88fa9]">Your strip is ready! 🩷</h1>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#fff8f3] px-4 py-10">
+      <h1 className="text-2xl font-bold text-[#d88fa9]">
+        Your strip is ready! 🩷
+      </h1>
 
       {stripUrl && (
-        <img src={stripUrl} alt="Photo strip" className="rounded-2xl shadow-lg w-full max-w-[300px]" />
+        <img
+          src={stripUrl}
+          alt="Photo strip"
+          className="w-full max-w-[300px] rounded-2xl shadow-lg"
+        />
       )}
 
       {videoBlob && videoBlob.size > 0 && (
-        <video controls src={URL.createObjectURL(videoBlob)} className="rounded-2xl shadow-lg w-full max-w-[300px]" />
+        <video
+          controls
+          src={URL.createObjectURL(videoBlob)}
+          className="w-full max-w-[300px] rounded-2xl shadow-lg"
+        />
       )}
 
       {incomingRequest && (
-        <div className="bg-white rounded-2xl shadow-md px-5 py-4 flex flex-col items-center gap-3 max-w-xs text-center">
-          <p className="text-[#d88fa9]">Your partner wants to retake the photos 🥺</p>
+        <div className="flex max-w-xs flex-col items-center gap-3 rounded-2xl bg-white px-5 py-4 text-center shadow-md">
+          <p className="text-[#d88fa9]">
+            Your partner wants to retake the photos 🥺
+          </p>
           <button
             onClick={handleAgree}
-            className="px-5 py-2 rounded-full bg-[#d88fa9] text-white font-semibold"
+            className="rounded-full bg-[#d88fa9] px-5 py-2 font-semibold text-white"
           >
             Agree & Retake
           </button>
@@ -99,26 +113,40 @@ export default function ResultPage() {
       )}
 
       {waitingForPartner && !partnerAgreed && (
-        <p className="text-[#d88fa9] text-sm">waiting for your partner to agree...</p>
+        <p className="text-sm text-[#d88fa9]">
+          waiting for your partner to agree...
+        </p>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:w-auto sm:max-w-none justify-center">
+      <div className="flex w-full max-w-xs flex-col justify-center gap-3 sm:w-auto sm:max-w-none sm:flex-row">
         {stripUrl && (
-          <a href={stripUrl} download="snap4two-strip.png" className="w-full sm:w-auto text-center px-6 py-3 rounded-full bg-[#d88fa9] text-white font-semibold shadow-md">
+          <a
+            href={stripUrl}
+            download="snap4two-strip.png"
+            className="w-full rounded-full bg-[#d88fa9] px-6 py-3 text-center font-semibold text-white shadow-md sm:w-auto"
+          >
             Download Strip
           </a>
         )}
         {videoBlob && videoBlob.size > 0 && (
-          <a href={URL.createObjectURL(videoBlob)} download="snap4two-session.webm" className="w-full sm:w-auto text-center px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold shadow-md">
+          <a
+            href={URL.createObjectURL(videoBlob)}
+            download="snap4two-session.webm"
+            className="w-full rounded-full border border-[#d88fa9] bg-white px-6 py-3 text-center font-semibold text-[#d88fa9] shadow-md sm:w-auto"
+          >
             Download Video
           </a>
         )}
         <button
           onClick={handleRetakeClick}
           disabled={waitingForPartner}
-          className="w-full sm:w-auto px-6 py-3 rounded-full bg-white border border-[#d88fa9] text-[#d88fa9] font-semibold disabled:opacity-50"
+          className="w-full rounded-full border border-[#d88fa9] bg-white px-6 py-3 font-semibold text-[#d88fa9] disabled:opacity-50 sm:w-auto"
         >
-          {isDuo ? (waitingForPartner ? "Waiting for partner..." : "Request Retake") : "Retake"}
+          {isDuo
+            ? waitingForPartner
+              ? "Waiting for partner..."
+              : "Request Retake"
+            : "Retake"}
         </button>
       </div>
     </main>

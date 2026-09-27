@@ -23,22 +23,13 @@ export default function DuoCapturePage() {
 
   const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
   const handlePeerData = useCallback((raw: string) => {
-  try {
-    const data = JSON.parse(raw);
-    if (data.type === "photo") {
-      setPartnerPhotos((prev) => [...prev, data.photo]);
-    }
-    if (data.type === "photo-update") {
-      setPartnerPhotos((prev) => {
-        const next = [...prev];
-        next[data.index] = data.photo;
-        return next;
-      });
-    }
-  } catch {
-    // ignore malformed data messages
-  }
-}, []);
+    try {
+      const data = JSON.parse(raw);
+      if (data.type === "photo") {
+        setPartnerPhotos((prev) => [...prev, data.photo]);
+      }
+    } catch {}
+  }, []);
 
   const { remoteStream, peerConnected, sendData } = usePeerConnection(
     socket,
@@ -55,8 +46,8 @@ export default function DuoCapturePage() {
     reset,
     setPartnerPhotos: saveStorePartnerPhotos,
     setMyPosition,
-    setVideoBlob,
     setRoomId,
+    setVideoBlob,
   } = useSessionStore();
 
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -66,24 +57,10 @@ export default function DuoCapturePage() {
   const wasRunningRef = useRef(false);
   const [myCaptureDone, setMyCaptureDone] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   const myPosition: "left" | "right" | null =
     shouldInitiate === null ? null : shouldInitiate ? "left" : "right";
-  
-  const [reviewing, setReviewing] = useState(false);
-const [retakeIndex, setRetakeIndex] = useState<number | null>(null);
-
-useEffect(() => {
-  if (!myCaptureDone || reviewing) return;
-
-  if (partnerPhotos.length >= 4) {
-    setReviewing(true);
-    return;
-  }
-
-  const timeoutId = setTimeout(() => setReviewing(true), 3000);
-  return () => clearTimeout(timeoutId);
-}, [myCaptureDone, partnerPhotos, reviewing]);
 
   useEffect(() => {
     setShareUrl(window.location.href);
@@ -98,7 +75,7 @@ useEffect(() => {
       myPosition
     ) {
       reset();
-      setPartnerPhotos([]); // clear any stale partner frames from a previous run
+      setPartnerPhotos([]);
       startRecording(stream, remoteStream, myPosition);
     }
     wasRunningRef.current = running;
@@ -120,7 +97,7 @@ useEffect(() => {
     lastCaptureSignal.current = captureSignal;
 
     if (videoRef.current) {
-      const frame = captureFrame(videoRef.current);
+      const frame = captureFrame(videoRef.current, 4 / 3);
       addPhoto(frame);
       sendData(JSON.stringify({ type: "photo", photo: frame }));
     }
@@ -129,7 +106,14 @@ useEffect(() => {
       stopRecording().then(setVideoBlob);
       setMyCaptureDone(true);
     }
-  }, [captureSignal, videoRef, addPhoto, sendData, stopRecording, setVideoBlob]);
+  }, [
+    captureSignal,
+    videoRef,
+    addPhoto,
+    sendData,
+    stopRecording,
+    setVideoBlob,
+  ]);
 
   useEffect(() => {
     if (!myCaptureDone || navigatedRef.current) return;
@@ -139,7 +123,7 @@ useEffect(() => {
       navigatedRef.current = true;
       saveStorePartnerPhotos(partnerPhotosRef.current);
       setMyPosition(myPosition);
-      setRoomId(roomId); // NEW
+      setRoomId(roomId);
       const sessionId = uuid();
       router.push(`/result/${sessionId}`);
     };
@@ -158,95 +142,167 @@ useEffect(() => {
     router,
     saveStorePartnerPhotos,
     setMyPosition,
+    setRoomId,
+    roomId,
   ]);
 
+  const copyCode = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopied("code");
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied("link");
+    setTimeout(() => setCopied(null), 1500);
+  };
+
   const localBox = (
-    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-black">
+    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-black shadow-xl">
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover scale-x-[-1]"
+        className="h-full w-full scale-x-[-1] object-cover"
       />
       {running && <CountdownOverlay count={count} />}
-      <span className="absolute bottom-1 left-1 text-white text-[10px] sm:text-xs bg-black/40 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
+      <span className="absolute bottom-2 left-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white sm:text-xs">
         You
       </span>
     </div>
   );
 
   const remoteBox = (
-    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-black">
+    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-black shadow-xl">
       {remoteStream ? (
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover scale-x-[-1]"
+          className="h-full w-full scale-x-[-1] object-cover"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center text-white/60 text-sm">
-          waiting...
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="max-w-[85%] rounded-2xl bg-black/50 px-4 py-3 text-center text-xs text-white/90 sm:text-sm">
+            <p className="font-semibold">Waiting for a friend...</p>
+            <p className="mt-1 text-[10px] text-white/60 sm:text-xs">
+              Video connects directly — nothing is stored.
+            </p>
+          </div>
         </div>
       )}
-      <span className="absolute bottom-1 left-1 text-white text-[10px] sm:text-xs bg-black/40 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
+      <span className="absolute bottom-2 left-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white sm:text-xs">
         Partner
       </span>
     </div>
   );
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[#fff8f3] gap-4 px-4 py-8">
-      <p className="text-[#d88fa9] font-semibold">
-        {myCaptureDone
-          ? "🩷 session complete! preparing your strip..."
-          : peerConnected
-            ? "🩷 connected with your partner!"
-            : peerJoined
-              ? "connecting video..."
-              : "waiting for your partner..."}
-      </p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f4ede7] px-3 py-6 sm:px-6">
+      <div className="flex w-full max-w-2xl items-center justify-between">
+        <button
+          onClick={() => router.push("/")}
+          className="text-lg font-bold text-[#d88fa9]"
+        >
+          snap4two 🩷
+        </button>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#a86b80] shadow-sm">
+          {myCaptureDone
+            ? "Session complete 🩷"
+            : peerConnected
+              ? "Connected 🩷"
+              : peerJoined
+                ? "Connecting..."
+                : "Duo Booth"}
+        </span>
+      </div>
 
       {!peerJoined && (
-        <div className="bg-white rounded-2xl shadow-md px-4 py-3 flex flex-col items-center gap-2 max-w-xs">
-          <p className="text-sm text-[#d88fa9]">
-            Share this link with your partner:
-          </p>
-          <div className="flex gap-2 items-center">
-            <code className="text-xs bg-[#fff0f5] px-2 py-1 rounded-full text-[#d88fa9] break-all">
-              {shareUrl}
-            </code>
+        <div className="flex w-full max-w-2xl flex-col items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-md sm:flex-row sm:justify-between sm:px-5">
+          <div className="flex items-center gap-2 text-left">
+            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#d88fa9]" />
+            <div>
+              <p className="text-sm font-semibold text-[#5c3a49]">
+                Invite your partner
+              </p>
+              <p className="text-[11px] text-[#8fae8f]">
+                🔒 Private &amp; secure — invite-only
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full gap-2 sm:w-auto">
             <button
-              onClick={() => navigator.clipboard.writeText(shareUrl)}
-              disabled={!shareUrl}
-              className="text-xs px-3 py-1 rounded-full bg-[#d88fa9] text-white font-semibold shrink-0"
+              onClick={copyCode}
+              className="flex-1 rounded-full border border-[#d88fa9]/40 px-3 py-2 text-xs font-semibold whitespace-nowrap text-[#d88fa9] sm:flex-none"
             >
-              Copy
+              {copied === "code" ? "Copied!" : `Code: ${roomId}`}
+            </button>
+            <button
+              onClick={copyLink}
+              className="flex-1 rounded-full bg-[#d88fa9] px-4 py-2 text-xs font-semibold whitespace-nowrap text-white sm:flex-none"
+            >
+              {copied === "link" ? "Copied!" : "Share invite link"}
             </button>
           </div>
         </div>
       )}
 
-      <div className="flex flex-row gap-2 sm:gap-3 w-full max-w-2xl px-2">
-        <div className={myPosition === "right" ? "order-2 flex-1 min-w-0" : "order-1 flex-1 min-w-0"}>
+      <div className="flex w-full max-w-2xl flex-row gap-2 sm:gap-3">
+        <div
+          className={
+            myPosition === "right"
+              ? "order-2 min-w-0 flex-1"
+              : "order-1 min-w-0 flex-1"
+          }
+        >
           {localBox}
         </div>
-        <div className={myPosition === "right" ? "order-1 flex-1 min-w-0" : "order-2 flex-1 min-w-0"}>
+        <div
+          className={
+            myPosition === "right"
+              ? "order-1 min-w-0 flex-1"
+              : "order-2 min-w-0 flex-1"
+          }
+        >
           {remoteBox}
         </div>
       </div>
 
-      {peerConnected && !running && !myCaptureDone && shotIndex < 4 && (
-        <button
-          onClick={start}
-          className="px-8 py-3 rounded-full bg-[#d88fa9] text-white font-semibold shadow-md"
-        >
-          Start Capture
-        </button>
-      )}
+      <div className="flex w-full max-w-2xl items-center justify-between gap-3 rounded-3xl bg-white px-4 py-4 shadow-md sm:px-6">
+        <div className="flex gap-2">
+          <button
+            disabled
+            title="Filters — coming soon"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#f0d3dd] text-base text-[#d88fa9]/40"
+          >
+            🎨
+          </button>
+          <button
+            disabled
+            title="Backgrounds — coming soon"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#f0d3dd] text-base text-[#d88fa9]/40"
+          >
+            🖼️
+          </button>
+        </div>
 
-      {running && <p className="text-[#d88fa9]">shot {shotIndex + 1} of 4</p>}
+        {peerConnected && !running && !myCaptureDone && shotIndex < 4 ? (
+          <button
+            onClick={start}
+            className="flex items-center gap-2 rounded-full bg-[#d88fa9] px-8 py-3 font-semibold text-white shadow-md"
+          >
+            📸 Capture
+          </button>
+        ) : (
+          <span className="text-sm font-medium text-[#a86b80]">
+            {running ? `shot ${shotIndex + 1} of 4` : "waiting to connect..."}
+          </span>
+        )}
+
+        <div className="w-11 sm:w-24" />
+      </div>
     </main>
   );
 }
