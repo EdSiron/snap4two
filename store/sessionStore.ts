@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { StripTemplate, TEMPLATES } from "@/lib/templates";
 
 interface SessionState {
   photos: string[];
@@ -14,6 +15,8 @@ interface SessionState {
   reset: () => void;
   setVideoBlob: (blob: Blob) => void;
   setFilter: (filter: string) => void;
+  selectedTemplate: StripTemplate;
+  setSelectedTemplate: (t: StripTemplate) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -30,4 +33,6 @@ export const useSessionStore = create<SessionState>((set) => ({
   reset: () => set({ photos: [], videoBlob: null, partnerPhotos: [] }),
   setVideoBlob: (blob) => set({ videoBlob: blob }),
   setFilter: (filter) => set({ filter }),
+  selectedTemplate: TEMPLATES[0],
+  setSelectedTemplate: (t) => set({ selectedTemplate: t }),
 }));

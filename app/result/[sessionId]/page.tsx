@@ -7,8 +7,15 @@ import { buildStrip, buildDuoStrip } from "@/lib/canvasUtils";
 import { useRetakeRequest } from "@/hooks/useRetakeRequest";
 
 export default function ResultPage() {
-  const { photos, partnerPhotos, myPosition, roomId, videoBlob, reset } =
-    useSessionStore();
+  const {
+    photos,
+    partnerPhotos,
+    myPosition,
+    videoBlob,
+    roomId,
+    selectedTemplate,
+    reset,
+  } = useSessionStore();
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const router = useRouter();
   const isDuo = roomId !== null;
@@ -21,9 +28,11 @@ export default function ResultPage() {
   useEffect(() => {
     if (photos.length === 0) return;
     if (partnerPhotos.length >= 4 && myPosition) {
-      buildDuoStrip(photos, partnerPhotos, myPosition).then(setStripUrl);
+      buildDuoStrip(photos, partnerPhotos, myPosition, selectedTemplate).then(
+        setStripUrl,
+      );
     } else {
-      buildStrip(photos).then(setStripUrl);
+      buildStrip(photos, selectedTemplate).then(setStripUrl);
     }
   }, [photos, partnerPhotos, myPosition]);
 

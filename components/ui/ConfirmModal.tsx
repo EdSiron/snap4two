@@ -38,7 +38,7 @@ export function ConfirmModal({
             onClick={(e) => e.stopPropagation()}
             className="flex w-full max-w-sm flex-col gap-4 rounded-3xl bg-white p-6 text-center shadow-xl"
           >
-            <h3 className="text-lg font-bold text-[#5c3a49]">{title}</h3>
+            <h3 className="text-lg font-bold text-[#6c233d]">{title}</h3>
             <p className="text-sm text-[#a86b80]">{message}</p>
 
             <div className="mt-2 flex gap-3">

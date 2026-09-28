@@ -11,12 +11,18 @@ import { captureFrame } from "@/lib/canvasUtils";
 import { useSessionStore } from "@/store/sessionStore";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { useSearchParams } from "next/navigation";
+import { TEMPLATES } from "@/lib/templates";
 import { v4 as uuid } from "uuid";
 
 export default function DuoCapturePage() {
   const params = useParams();
   const router = useRouter();
   const roomId = params.roomId as string;
+
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get("template");
+  const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0];
 
   const { videoRef, stream } = useCamera();
   const { start: startRecording, stop: stopRecording } = useDuoRecorder();
@@ -51,6 +57,7 @@ export default function DuoCapturePage() {
     setMyPosition,
     setRoomId,
     setVideoBlob,
+    setSelectedTemplate, // ADD THIS
   } = useSessionStore();
 
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -64,6 +71,10 @@ export default function DuoCapturePage() {
 
   const myPosition: "left" | "right" | null =
     shouldInitiate === null ? null : shouldInitiate ? "left" : "right";
+
+  useEffect(() => {
+    setSelectedTemplate(template);
+  }, [template, setSelectedTemplate]);
 
   useEffect(() => {
     setShareUrl(window.location.href);
@@ -236,7 +247,7 @@ export default function DuoCapturePage() {
           <div className="flex items-center gap-2 text-left">
             <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#d88fa9]" />
             <div>
-              <p className="text-sm font-semibold text-[#5c3a49]">
+              <p className="text-sm font-semibold text-[#6c233d]">
                 Invite your partner
               </p>
               <p className="text-[11px] text-[#8fae8f]">

@@ -1,3 +1,72 @@
+import { StripTemplate } from "@/lib/templates";
+
+// Strip layouts. The canvas sizes never change; photos are exact 4:3.
+export const SOLO_LAYOUT = {
+  W: 600,
+  H: 1876,
+  SIDE: 60,
+  TOP: 118,
+  GAP: 16,
+  PHOTO_W: 480,
+  PHOTO_H: 360,
+};
+
+export const DUO_LAYOUT = {
+  W: 600,
+  H: 1040,
+  SIDE: 60,
+  TOP: 118,
+  GAP: 16,
+  COL_W: 240,
+  ROW_H: 180,
+};
+
+// 1 = download is 600px wide. Set to 2 for a sharper 1200px download.
+const RENDER_SCALE = 1;
+
+function createCanvas(w: number, h: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = w * RENDER_SCALE;
+  canvas.height = h * RENDER_SCALE;
+  const ctx = canvas.getContext("2d")!;
+  ctx.scale(RENDER_SCALE, RENDER_SCALE);
+  return { canvas, ctx };
+}
+
+// resolves null instead of hanging when a file doesn't exist yet
+function tryLoadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+async function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  template: StripTemplate,
+  mode: "solo" | "duo",
+  W: number,
+  H: number,
+) {
+  ctx.fillStyle = template.background; // fallback if the image is missing
+  ctx.fillRect(0, 0, W, H);
+  const bg = await tryLoadImage(`/templates/${mode}/${template.id}.png`);
+  if (bg) ctx.drawImage(bg, 0, 0, W, H);
+}
+
+async function drawOverlay(
+  ctx: CanvasRenderingContext2D,
+  template: StripTemplate,
+  mode: "solo" | "duo",
+  W: number,
+  H: number,
+) {
+  const overlay = await tryLoadImage(`/overlays/${mode}/${template.id}.png`);
+  if (overlay) ctx.drawImage(overlay, 0, 0, W, H);
+}
+
 export function captureFrame(video: HTMLVideoElement, aspect?: number): string {
   const vw = video.videoWidth;
   const vh = video.videoHeight;
@@ -30,30 +99,49 @@ export function captureFrame(video: HTMLVideoElement, aspect?: number): string {
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
-export async function buildStrip(photos: string[]): Promise<string> {
-  const canvas = document.createElement("canvas");
-  const W = 600,
-    PAD = 24,
-    FOOTER_H = 100;
-  const PHOTO_W = W - PAD * 2; // 552
-  const PHOTO_H = PHOTO_W * (3 / 4); // 414 — exact 4:3 ratio, matching the solo preview box
-  canvas.width = W;
-  canvas.height = PAD * 5 + PHOTO_H * 4 + FOOTER_H;
+export async function buildStrip(
+  photos: string[],
+  template: StripTemplate,
+): Promise<string> {
+  const { W, H, SIDE, TOP, GAP, PHOTO_W, PHOTO_H } = SOLO_LAYOUT;
+  const { canvas, ctx } = createCanvas(W, H);
 
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#fff8f3";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await drawBackground(ctx, template, "solo", W, H);
 
   for (let i = 0; i < photos.length; i++) {
     const img = await loadImage(photos[i]);
-    const y = PAD + i * (PHOTO_H + PAD);
-    drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
+    const y = TOP + i * (PHOTO_H + GAP);
+    drawImageCover(ctx, img, SIDE, y, PHOTO_W, PHOTO_H);
   }
 
-  ctx.fillStyle = "#d88fa9";
-  ctx.font = "bold 28px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("snap4two 🩷", canvas.width / 2, canvas.height - 35);
+  await drawOverlay(ctx, template, "solo", W, H);
+
+  return canvas.toDataURL("image/png");
+}
+
+export async function buildDuoStrip(
+  myPhotos: string[],
+  partnerPhotos: string[],
+  myPosition: "left" | "right",
+  template: StripTemplate,
+): Promise<string> {
+  const { W, H, SIDE, TOP, GAP, COL_W, ROW_H } = DUO_LAYOUT;
+  const { canvas, ctx } = createCanvas(W, H);
+
+  await drawBackground(ctx, template, "duo", W, H);
+
+  const leftPhotos = myPosition === "left" ? myPhotos : partnerPhotos;
+  const rightPhotos = myPosition === "left" ? partnerPhotos : myPhotos;
+
+  for (let i = 0; i < 4; i++) {
+    const y = TOP + i * (ROW_H + GAP);
+    const leftImg = await loadImage(leftPhotos[i]);
+    const rightImg = await loadImage(rightPhotos[i]);
+    drawImageCover(ctx, leftImg, SIDE, y, COL_W, ROW_H);
+    drawImageCover(ctx, rightImg, SIDE + COL_W, y, COL_W, ROW_H);
+  }
+
+  await drawOverlay(ctx, template, "duo", W, H);
 
   return canvas.toDataURL("image/png");
 }
@@ -94,41 +182,4 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onload = () => resolve(img);
     img.src = src;
   });
-}
-
-export async function buildDuoStrip(
-  myPhotos: string[],
-  partnerPhotos: string[],
-  myPosition: "left" | "right",
-): Promise<string> {
-  const COL_W = 280;
-  const ROW_H = COL_W * (3 / 4); // 210 — exact 4:3 ratio, matching the duo preview boxes
-  const OUTER_PAD = 20,
-    ROW_GAP = 20,
-    FOOTER_H = 100;
-  const canvas = document.createElement("canvas");
-  canvas.width = COL_W * 2 + OUTER_PAD * 2;
-  canvas.height = OUTER_PAD * 2 + ROW_GAP * 3 + ROW_H * 4 + FOOTER_H;
-
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#fff8f3";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const leftPhotos = myPosition === "left" ? myPhotos : partnerPhotos;
-  const rightPhotos = myPosition === "left" ? partnerPhotos : myPhotos;
-
-  for (let i = 0; i < 4; i++) {
-    const y = OUTER_PAD + i * (ROW_H + ROW_GAP);
-    const leftImg = await loadImage(leftPhotos[i]);
-    const rightImg = await loadImage(rightPhotos[i]);
-    drawImageCover(ctx, leftImg, OUTER_PAD, y, COL_W, ROW_H);
-    drawImageCover(ctx, rightImg, OUTER_PAD + COL_W, y, COL_W, ROW_H);
-  }
-
-  ctx.fillStyle = "#d88fa9";
-  ctx.font = "bold 24px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("snap4two 🩷", canvas.width / 2, canvas.height - 35);
-
-  return canvas.toDataURL("image/png");
 }

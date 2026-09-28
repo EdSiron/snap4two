@@ -12,7 +12,7 @@ export default function Home() {
 
   const createRoom = () => {
     const roomId = uuid().slice(0, 8);
-    router.push(`/capture/duo/${roomId}`);
+    router.push(`/capture/template?room=${roomId}`);
   };
 
   const joinRoom = () => {
@@ -58,7 +58,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="max-w-3xl text-4xl leading-tight font-bold text-[#5c3a49] sm:text-6xl"
+          className="max-w-3xl text-4xl leading-tight font-bold text-[#6c233d] sm:text-6xl"
         >
           A photobooth for moments,{" "}
           <span className="text-[#d88fa9]">no matter the distance.</span>
@@ -82,7 +82,7 @@ export default function Home() {
           className="mt-2 flex w-full flex-col gap-3 sm:w-auto sm:flex-row"
         >
           <button
-            onClick={() => router.push("/capture")}
+            onClick={() => router.push("/capture/template")}
             className="rounded-full bg-[#d88fa9] px-8 py-3.5 font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
           >
             Start Solo Booth
@@ -126,7 +126,7 @@ export default function Home() {
         id="how-it-works"
         className="mx-auto max-w-6xl px-6 py-16 sm:py-24"
       >
-        <h2 className="mb-12 text-center text-2xl font-bold text-[#5c3a49] sm:text-3xl">
+        <h2 className="mb-12 text-center text-2xl font-bold text-[#6c233d] sm:text-3xl">
           How it works
         </h2>
         <div className="grid gap-8 sm:grid-cols-3">
@@ -156,7 +156,7 @@ export default function Home() {
               className="flex flex-col items-center gap-3 rounded-2xl bg-white p-6 text-center shadow-sm"
             >
               <span className="text-4xl">{step.emoji}</span>
-              <h3 className="font-semibold text-[#5c3a49]">{step.title}</h3>
+              <h3 className="font-semibold text-[#6c233d]">{step.title}</h3>
               <p className="text-sm text-[#a86b80]">{step.desc}</p>
             </motion.div>
           ))}
@@ -170,7 +170,7 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-wide text-[#d88fa9] uppercase">
               For long-distance couples
             </span>
-            <h2 className="mt-2 mb-4 text-2xl font-bold text-[#5c3a49] sm:text-3xl">
+            <h2 className="mt-2 mb-4 text-2xl font-bold text-[#6c233d] sm:text-3xl">
               You don't need to be in the same room to make a memory.
             </h2>
             <p className="mb-6 text-[#a86b80]">
@@ -194,7 +194,7 @@ export default function Home() {
 
       {/* FEATURES */}
       <section id="features" className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
-        <h2 className="mb-12 text-center text-2xl font-bold text-[#5c3a49] sm:text-3xl">
+        <h2 className="mb-12 text-center text-2xl font-bold text-[#6c233d] sm:text-3xl">
           Everything a real photobooth has — and more
         </h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -229,7 +229,7 @@ export default function Home() {
               className="flex flex-col gap-2 rounded-2xl bg-white p-6 shadow-sm"
             >
               <span className="text-3xl">{f.icon}</span>
-              <h3 className="font-semibold text-[#5c3a49]">{f.title}</h3>
+              <h3 className="font-semibold text-[#6c233d]">{f.title}</h3>
               <p className="text-sm text-[#a86b80]">{f.desc}</p>
             </motion.div>
           ))}
@@ -238,7 +238,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-6 py-16 text-center sm:py-24">
-        <h2 className="mb-4 text-2xl font-bold text-[#5c3a49] sm:text-4xl">
+        <h2 className="mb-4 text-2xl font-bold text-[#6c233d] sm:text-4xl">
           Ready to make a memory?
         </h2>
         <p className="mx-auto mb-8 max-w-md text-[#a86b80]">
@@ -246,7 +246,7 @@ export default function Home() {
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <button
-            onClick={() => router.push("/capture")}
+            onClick={() => router.push("/capture/template")}
             className="rounded-full bg-[#d88fa9] px-8 py-3.5 font-semibold text-white shadow-md transition hover:shadow-lg"
           >
             Start Solo Booth
@@ -282,7 +282,7 @@ export default function Home() {
               onClick={(e) => e.stopPropagation()}
               className="flex w-full max-w-sm flex-col gap-4 rounded-3xl bg-white p-6 shadow-xl sm:p-8"
             >
-              <h3 className="text-center text-lg font-bold text-[#5c3a49]">
+              <h3 className="text-center text-lg font-bold text-[#6c233d]">
                 Duo Booth 💌
               </h3>
               <p className="text-center text-sm text-[#a86b80]">
@@ -308,7 +308,7 @@ export default function Home() {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   placeholder="Enter room code"
-                  className="flex-1 rounded-full border border-[#d88fa9]/30 px-4 py-2.5 text-sm text-[#5c3a49] outline-none focus:border-[#d88fa9]"
+                  className="flex-1 rounded-full border border-[#d88fa9]/30 px-4 py-2.5 text-sm text-[#6c233d] outline-none focus:border-[#d88fa9]"
                 />
                 <button
                   onClick={joinRoom}
